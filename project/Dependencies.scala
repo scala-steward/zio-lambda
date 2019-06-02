@@ -9,8 +9,9 @@ object Dependencies {
   lazy val prodDependencies = Seq(
     "org.scalaz"             %% "scalaz-zio"                    % zioVersion,
     "org.scalaz"             %% "scalaz-zio-streams"            % zioVersion,
+    "org.scalaz"             %% "scalaz-zio-interop-java"       % zioVersion,
     "com.softwaremill.sttp"  %% "core"                          % sttpVersion,
     "com.softwaremill.sttp"  %% "async-http-client-backend-zio" % sttpVersion,
-    "software.amazon.awssdk" % "cloudwatch"                     % awsVersion
+    "software.amazon.awssdk" % "cloudwatchlogs"                 % awsVersion
   )
 }

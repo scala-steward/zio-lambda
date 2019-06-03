@@ -2,8 +2,11 @@ package zio.aws.lambda
 
 import com.softwaremill.sttp._
 import scalaz.zio._
+import scalaz.zio.clock.Clock
 import scalaz.zio.duration.Duration
+import scalaz.zio.system.System
 import java.util.concurrent.TimeUnit
+import zio.aws.lambda.services._
 
 /**
   * A `ZLambda[R]` is a purely functional AWS Lambda function that runs on top of [ZIO](https://zio.dev/)
@@ -23,7 +26,7 @@ abstract class ZLambda extends App with CustomRuntimeApi {
   def cleanup(r: Resources): ZIO[Runtime, Nothing, Unit]
 
   /** Performs the action  */
-  def handle(req: Request, ctx: Context): ZIO[Resources, Nothing, Response]
+  def handle(req: Request, res: Resources): ZIO[Runtime, Error, Response]
 
   ////
   // Main
@@ -43,9 +46,11 @@ abstract class ZLambda extends App with CustomRuntimeApi {
       (for {
         req      <- invocationRequest
         _        <- setTraceId(req.traceId)
-        ctx      <- buildContext(req)
-        response <- handle(req, ctx).timeout(Duration(req.deadline, TimeUnit.MILLISECONDS)).provide(res)
-        _        <- invocationResponse(req, response)
+        response <- handle(req, res).timeout(Duration(req.deadline, TimeUnit.MILLISECONDS))
+        _ <- response match {
+              case Some(res) => invocationResponse(req, res)
+              case None      => invocationError(req, "Function timed out")
+            }
       } yield ()).forever.provide(rt)
   }
 
@@ -53,9 +58,13 @@ abstract class ZLambda extends App with CustomRuntimeApi {
     * Acquires all the resources necessary for the lambda to run, runtime included. Function-specific
     * resources can use the lambda runtime to acquire its own resources.
     */
-  final val acquire: ZIO[Any, Error, (Resources, Runtime)] = UIO {
-    new Environment.Live with Http.Live
-  } >>= (rt => resources.provide(rt).map((_, rt)))
+  final val acquire: ZIO[System, Error, (Resources, Runtime)] =
+    (for {
+      env    <- zio.aws.lambda.services.Environment.fromEnvironment
+      logger <- Logging.fromCloudWatch.provide(env)
+    } yield Runtime(env.lambdaEnv, logger.logger)) >>= (
+        rt => resources.provide(rt).map((_, rt))
+    )
 
   /**
     * Releases all resources, starting with the function-specific ones
@@ -72,37 +81,16 @@ private[lambda] trait CustomRuntimeApi {
     invocation <- IO.fromOption(Request.fromHttpResponse(resp)) mapError (_ => MalformedRequest(resp))
   } yield invocation
 
-  final def invocationResponse(req: Request, res: String): ZIO[Runtime, Nothing, Unit] =
+  final def invocationResponse(req: Request, res: Response): ZIO[Runtime, Error, Unit] =
     (runtimeApi >>= (
-        rapi => httpPost(uri"http://${rapi}/${version}/runtime/invocation/${req.requestId}/response", res).unit
-    )).orDieWith(_.toThrowable)
+        rapi => httpPost(uri"http://${rapi}/${version}/runtime/invocation/${req.requestId}/response", res.body).unit
+    ))
 
-  final def invocationError(req: Request, err: String): ZIO[Runtime, Nothing, Unit] =
+  final def invocationError(req: Request, err: String): ZIO[Runtime, Error, Unit] =
     (runtimeApi >>= (
         rapi => httpPost(uri"http://${rapi}/${version}/runtime/invocation/${req.requestId}/error", err).unit
-    )).orDieWith(_.toThrowable)
+    ))
 
-  final def initError(err: String): ZIO[Runtime, Nothing, Unit] =
+  final def initError(err: String): ZIO[Runtime, Error, Unit] =
     runtimeApi >>= (rapi => curl("POST", uri"http://${rapi}/${version}/runtime/init/error", err))
-
-  final def buildContext(req: Request): ZIO[Runtime, Error, Context] =
-    for {
-      fn    <- functionName
-      fver  <- functionVersion
-      fsiz  <- functionMemorySize
-      lgnam <- logGroupName
-      lgstr <- logStreamName
-    } yield
-      Context(
-        fn,
-        fver,
-        req.functionArn,
-        fsiz,
-        req.requestId,
-        lgnam,
-        lgstr,
-        req.identity,
-        req.clientContext,
-        req.deadline
-      )
 }

@@ -1,6 +1,6 @@
 package zio.aws.lambda
 
-import com.softwaremill.sttp.Response
+import com.softwaremill.sttp.{Response => SResponse}
 import scala.util.Try
 
 final case class Request(
@@ -21,7 +21,7 @@ final case class Request(
 ) extends Serializable
 
 object Request extends Serializable {
-  def fromHttpResponse(r: Response[String]): Option[Request] =
+  def fromHttpResponse(r: SResponse[String]): Option[Request] =
     for {
       requestId     <- r.header("Lambda-Runtime-Aws-Request-Id")
       deadline      <- r.header("Lambda-Runtime-Deadline-Ms").map(_.toLong)

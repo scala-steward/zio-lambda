@@ -65,7 +65,7 @@ object Environment extends Serializable {
 
     final val handler: IO[Error, String] = get(ENV_HANDLER)
     final val region: IO[Error, Region] = get(ENV_REGION).flatMap { region =>
-      IO.effect(Region.fromName(r)).catchAll(x => InvalidValue(region, x))
+      IO.effect(Region.of(region)).catchAll(x => InvalidValue(region, x))
     }
     final val runtimeApi: IO[Error, String] = get(ENV_RUNTIME_API)
     final val runtimeDir: IO[Error, String] = get(ENV_RUNTIME_DIR)

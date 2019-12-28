@@ -2,16 +2,16 @@ import sbt._
 
 object Dependencies {
   // Dependency versions
-  val zioVersion  = "1.0-RC5"
-  val sttpVersion = "1.5.17"
-  val awsVersion  = "2.5.54"
+  val zioVersion = "1.0.0-RC17"
+  val awsVersion = "2.10.41"
 
   lazy val prodDependencies = Seq(
-    "org.scalaz"             %% "scalaz-zio"                    % zioVersion,
-    "org.scalaz"             %% "scalaz-zio-streams"            % zioVersion,
-    "org.scalaz"             %% "scalaz-zio-interop-java"       % zioVersion,
-    "com.softwaremill.sttp"  %% "core"                          % sttpVersion,
-    "com.softwaremill.sttp"  %% "async-http-client-backend-zio" % sttpVersion,
-    "software.amazon.awssdk" % "cloudwatchlogs"                 % awsVersion
+    // TODO: exclude http clients, use zio-http instead
+    "software.amazon.awssdk"       % "cloudwatchlogs"    % awsVersion,
+    "dev.zio"                      %% "zio"              % zioVersion,
+    "dev.zio"                      %% "zio-streams"      % zioVersion,
+    "dev.zio"                      %% "zio-interop-java" % "1.1.0.0-RC6",
+    "dev.zio"                      %% "zio-logging"      % "0.0.4",
+    "com.softwaremill.sttp.client" %% "core"             % "2.0.0-RC5"
   )
 }

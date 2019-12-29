@@ -1,6 +1,6 @@
 package zio.aws.lambda.environment
 
-import java.time.{ZoneId, ZoneOffset}
+import java.time.{ ZoneId, ZoneOffset }
 import scala.sys.process.Process
 import software.amazon.awssdk.regions.Region
 import zio._

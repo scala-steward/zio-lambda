@@ -1,9 +1,9 @@
 package zio.logging.cloudwatch
 
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.{InputLogEvent, PutLogEventsRequest}
-import software.amazon.awssdk.auth.credentials.{AwsSessionCredentials, StaticCredentialsProvider}
-import zio.{Cause, Task, UIO, ZIO}
+import software.amazon.awssdk.services.cloudwatchlogs.model.{ InputLogEvent, PutLogEventsRequest }
+import software.amazon.awssdk.auth.credentials.{ AwsSessionCredentials, StaticCredentialsProvider }
+import zio.{ Cause, Task, UIO, ZIO }
 import zio.clock.Clock
 import zio.interop.javaz
 import zio.logging.Logging
@@ -63,26 +63,24 @@ object CloudWatchLogger extends Serializable {
           logStreamName <*>
           region
       ) { (accessKeyId, secretAccessKey, sessionToken, groupName, streamName, region) =>
-        Task
-          .effect {
-            val credentials = AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken)
-            CloudWatchLogsAsyncClient
-              .builder()
-              .credentialsProvider(StaticCredentialsProvider.create(credentials))
-              .region(region)
-              .build
+        Task.effect {
+          val credentials = AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken)
+          CloudWatchLogsAsyncClient
+            .builder()
+            .credentialsProvider(StaticCredentialsProvider.create(credentials))
+            .region(region)
+            .build
+        }.map { client0 =>
+          new Logging[String] {
+            val logging: Logging.Service[Any, String] =
+              new CloudWatchLogger {
+                override val client        = client0
+                override val logGroupName  = groupName
+                override val logStreamName = streamName
+                override val clock         = Clock.Live.clock
+              }
           }
-          .map { client0 =>
-            new Logging[String] {
-              val logging: Logging.Service[Any, String] =
-                new CloudWatchLogger {
-                  override val client        = client0
-                  override val logGroupName  = groupName
-                  override val logStreamName = streamName
-                  override val clock         = Clock.Live.clock
-                }
-            }
-          }
+        }
       }
       .flatten
 }

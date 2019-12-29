@@ -1,9 +1,9 @@
 package zio.logging.cloudwatch
 
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.{InputLogEvent, PutLogEventsRequest}
-import software.amazon.awssdk.auth.credentials.{AwsSessionCredentials, StaticCredentialsProvider}
-import zio.{Cause, Task, UIO, ZIO}
+import software.amazon.awssdk.services.cloudwatchlogs.model.{ InputLogEvent, PutLogEventsRequest }
+import software.amazon.awssdk.auth.credentials.{ AwsSessionCredentials, StaticCredentialsProvider }
+import zio.{ Cause, Task, UIO, ZIO }
 import zio.clock.Clock
 import zio.interop.javaz
 import zio.logging.Logging
@@ -18,15 +18,18 @@ trait CloudWatchLogger extends Logging.Service[Any, String] {
   // TODO Stream logs to a queue, create a fiber to poll the queue and accumulate
   // logs up to a PutLogEventsRequest limits and send the request
   private[this] def log(msg: String, time: OffsetDateTime): UIO[Unit] =
-    javaz.fromCompletionStage(UIO {
-      val request = PutLogEventsRequest
-        .builder()
-        .logGroupName(logGroupName)
-        .logStreamName(logStreamName)
-        .logEvents(InputLogEvent.builder().message(msg).timestamp(time.toInstant.toEpochMilli).build)
-        .build
-      client.putLogEvents(request)
-    }).catchAll(_ => UIO.unit).unit
+    javaz
+      .fromCompletionStage(UIO {
+        val request = PutLogEventsRequest
+          .builder()
+          .logGroupName(logGroupName)
+          .logStreamName(logStreamName)
+          .logEvents(InputLogEvent.builder().message(msg).timestamp(time.toInstant.toEpochMilli).build)
+          .build
+        client.putLogEvents(request)
+      })
+      .catchAll(_ => UIO.unit)
+      .unit
 
   def clock: Clock.Service[Any]
 
@@ -51,24 +54,23 @@ trait CloudWatchLogger extends Logging.Service[Any, String] {
 
 object CloudWatchLogger extends Serializable {
   val fromEnvironment: ZIO[Environment, Error, Logging[String]] =
-    Task.mapN(
-      awsAccessKeyId <*>
-        awsSecretAccessKey <*>
-        awsSessionToken <*>
-        logGroupName <*>
-        logStreamName <*>
-        region
-    ) { (accessKeyId, secretAccessKey, sessionToken, groupName, streamName, region) =>
-      Task
-        .effect {
+    Task
+      .mapN(
+        awsAccessKeyId <*>
+          awsSecretAccessKey <*>
+          awsSessionToken <*>
+          logGroupName <*>
+          logStreamName <*>
+          region
+      ) { (accessKeyId, secretAccessKey, sessionToken, groupName, streamName, region) =>
+        Task.effect {
           val credentials = AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken)
           CloudWatchLogsAsyncClient
             .builder()
             .credentialsProvider(StaticCredentialsProvider.create(credentials))
             .region(region)
             .build
-        }
-        .map { client0 =>
+        }.map { client0 =>
           new Logging[String] {
             val logging: Logging.Service[Any, String] =
               new CloudWatchLogger {
@@ -79,5 +81,6 @@ object CloudWatchLogger extends Serializable {
               }
           }
         }
-    }.flatten
+      }
+      .flatten
 }

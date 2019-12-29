@@ -1,6 +1,6 @@
 package zio.aws.lambda.environment
 
-import java.time.{ZoneId, ZoneOffset}
+import java.time.{ ZoneId, ZoneOffset }
 import scala.sys.process.Process
 import software.amazon.awssdk.regions.Region
 import zio._
@@ -55,38 +55,41 @@ object Environment extends Serializable {
     protected def system: System.Service[Any]
 
     private[this] def get(key: String): IO[Error, String] =
-      system.env(key).foldM(
-        _ => IO.fail(AccessDenied),
-        {
-          case None => IO.fail(MissingVariable)
-          case Some(otherwise) => IO.succeed(otherwise)
-        }
-      ).memoize.flatten
+      system
+        .env(key)
+        .foldM(
+          _ => IO.fail(AccessDenied), {
+            case None            => IO.fail(MissingVariable)
+            case Some(otherwise) => IO.succeed(otherwise)
+          }
+        )
+        .memoize
+        .flatten
 
     final val handler: IO[Error, String] = get(ENV_HANDLER)
     final val region: IO[Error, Region] = get(ENV_REGION).flatMap { region =>
       IO.effect(Region.of(region)).catchAll(x => InvalidValue(region, x))
     }
-    final val runtimeApi: IO[Error, String] = get(ENV_RUNTIME_API)
-    final val runtimeDir: IO[Error, String] = get(ENV_RUNTIME_DIR)
-    final val taskRoot: IO[Error, String] = get(ENV_TASK_ROOT)
-    final val functionName: IO[Error, String] = get(ENV_FUNCTION_NAME)
-    final val functionMemorySize: IO[Error, String] = get(ENV_FUNCTION_MEMORY_SIZE)
-    final val functionVersion: IO[Error, String] = get(ENV_FUNCTION_VERSION)
-    final val logGroupName: IO[Error, String] = get(ENV_LOG_GROUP_NAME)
-    final val logStreamName: IO[Error, String] = get(ENV_LOG_STREAM_NAME)
-    final val awsExecutionEnv: IO[Error, String] = get(ENV_EXECUTION_ENV)
-    final val awsAccessKeyId: IO[Error, String] = get(ENV_ACCESS_KEY)
-    final val awsSecretAccessKey: IO[Error, String] = get(ENV_SECRET_ACCESS_KEY)
-    final val awsSessionToken: IO[Error, String] = get(ENV_SESSION_TOKEN)
-    final val lang: IO[Error, String] = get(ENV_LANG)
-    final val timeZone: IO[Error, String] = get(ENV_TIMEZONE)
-    final val path: IO[Error, String] = get(ENV_PATH)
+    final val runtimeApi: IO[Error, String]            = get(ENV_RUNTIME_API)
+    final val runtimeDir: IO[Error, String]            = get(ENV_RUNTIME_DIR)
+    final val taskRoot: IO[Error, String]              = get(ENV_TASK_ROOT)
+    final val functionName: IO[Error, String]          = get(ENV_FUNCTION_NAME)
+    final val functionMemorySize: IO[Error, String]    = get(ENV_FUNCTION_MEMORY_SIZE)
+    final val functionVersion: IO[Error, String]       = get(ENV_FUNCTION_VERSION)
+    final val logGroupName: IO[Error, String]          = get(ENV_LOG_GROUP_NAME)
+    final val logStreamName: IO[Error, String]         = get(ENV_LOG_STREAM_NAME)
+    final val awsExecutionEnv: IO[Error, String]       = get(ENV_EXECUTION_ENV)
+    final val awsAccessKeyId: IO[Error, String]        = get(ENV_ACCESS_KEY)
+    final val awsSecretAccessKey: IO[Error, String]    = get(ENV_SECRET_ACCESS_KEY)
+    final val awsSessionToken: IO[Error, String]       = get(ENV_SESSION_TOKEN)
+    final val lang: IO[Error, String]                  = get(ENV_LANG)
+    final val timeZone: IO[Error, String]              = get(ENV_TIMEZONE)
+    final val path: IO[Error, String]                  = get(ENV_PATH)
     final def setTraceId(tid: String): IO[Error, Unit] = ???
   }
 
-  sealed trait Error extends Product with Serializable
+  sealed trait Error                                                  extends Product with Serializable
   final case class InvalidValue(value: String, underlying: Throwable) extends Error
-  case object AccessDenied extends Error
-  case object MissingVariable extends Error
+  case object AccessDenied                                            extends Error
+  case object MissingVariable                                         extends Error
 }

@@ -1,12 +1,13 @@
 package zio.aws.lambda.services
 
-import com.softwaremill.sttp.{ Response => SResponse, _ }
-import com.softwaremill.sttp.asynchttpclient.zio._
+import sttp.client.{ Response => SResponse, _ }
+import sttp.client.asynchttpclient.zio._
+import sttp.model.Uri
 import scala.concurrent.duration._
 import scala.sys.process._
-import scalaz.zio.{ZIO, UIO}
-import scalaz.zio.blocking.Blocking
-import scalaz.zio.IO
+import zio.{ UIO, ZIO }
+import zio.blocking.Blocking
+import zio.IO
 import zio.aws.lambda._
 
 trait Http extends Serializable {
@@ -27,16 +28,20 @@ object Http extends Serializable {
 
       val close = UIO.effectTotal(backend.close())
 
-      def get(uri: Uri, headers: Map[String, String]) = sttp.headers(headers).get(uri).send[ZIO[Any, Throwable, ?]]().mapError(HttpError(_))
-      
+      def get(uri: Uri, headers: Map[String, String]) =
+        sttp.headers(headers).get(uri).send[ZIO[Any, Throwable, ?]]().mapError(HttpError(_))
+
       def post(uri: Uri, body: String, headers: Map[String, String]) =
         sttp.headers(headers).body(body).post(uri).send().mapError(HttpError(_))
 
-      def curl(verb: String, uri: Uri, args: String*) = IO.effectAsync[Any, Nothing, String] { k =>
-        blocking.effectBlocking {
-          Seq("curl", "-L", "-sS", s"-X${verb}", uri.toString) ++ args !! ProcessLogger(s => k(UIO.succeed(s)))
-        }
-      }.orDie.unit
+      def curl(verb: String, uri: Uri, args: String*) =
+        IO.effectAsync[Any, Nothing, String] { k =>
+            blocking.effectBlocking {
+              Seq("curl", "-L", "-sS", s"-X${verb}", uri.toString) ++ args !! ProcessLogger(s => k(UIO.succeed(s)))
+            }
+          }
+          .orDie
+          .unit
     }
   }
 

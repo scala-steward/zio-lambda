@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   // Dependency versions
-  val zioVersion = "1.0.0-RC17"
+  val zioVersion = "1.0.0-RC19-2"
   val awsVersion = "2.10.41"
 
   lazy val prodDependencies = Seq(

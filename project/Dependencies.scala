@@ -11,7 +11,7 @@ object Dependencies {
     "dev.zio"                      %% "zio"                           % zioVersion,
     "dev.zio"                      %% "zio-streams"                   % zioVersion,
     "dev.zio"                      %% "zio-interop-java"              % "1.1.0.0-RC6",
-    "dev.zio"                      %% "zio-logging"                   % "0.3.2",
+    "dev.zio"                      %% "zio-logging"                   % "0.5.0",
     "com.softwaremill.sttp.client" %% "core"                          % "2.0.9",
     "com.softwaremill.sttp.client" %% "async-http-client-backend-zio" % "2.0.9"
   )

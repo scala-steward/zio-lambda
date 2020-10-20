@@ -5,4 +5,4 @@ addSbtPlugin("com.dwijnand"              % "sbt-dynver"                % "4.1.1"
 addSbtPlugin("com.jsuereth"              % "sbt-pgp"                   % "1.1.2")
 addSbtPlugin("org.xerial.sbt"            % "sbt-sonatype"              % "3.8")
 addSbtPlugin("de.heikoseeberger"         % "sbt-header"                % "5.6.0")
-addSbtPlugin("com.github.cb372"          % "sbt-explicit-dependencies" % "0.2.13")
+addSbtPlugin("com.github.cb372"          % "sbt-explicit-dependencies" % "0.2.15")

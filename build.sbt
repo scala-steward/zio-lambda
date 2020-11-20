@@ -32,7 +32,7 @@ buildInfoPackage := "zio.lambda"
 buildInfoObject := "BuildInfo"
 
 libraryDependencies ++= Dependencies.prodDependencies ++ Seq(
-  compilerPlugin("org.typelevel" % "kind-projector" % "0.11.0") cross CrossVersion.full
+  compilerPlugin("org.typelevel" % "kind-projector" % "0.11.1") cross CrossVersion.full
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

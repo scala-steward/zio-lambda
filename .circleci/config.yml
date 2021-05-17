@@ -44,7 +44,7 @@ jobs:
             - "~/.m2"
   test213_jdk8:
     docker:
-      - image: hseeberger/scala-sbt:8u222_1.3.6_2.13.1
+      - image: hseeberger/scala-sbt:8u222_1.3.6_2.13.6
     steps:
       - checkout
       - restore_cache:
@@ -58,7 +58,7 @@ jobs:
             - "~/.m2"
   test213_jdk11:
     docker:
-      - image: hseeberger/scala-sbt:11.0.5_1.3.6_2.13.1
+      - image: hseeberger/scala-sbt:11.0.5_1.3.6_2.13.6
     steps:
       - checkout
       - restore_cache:
